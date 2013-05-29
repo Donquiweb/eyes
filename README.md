@@ -4,10 +4,10 @@
 
 It currently features the following programs:
 
-- objectTracker: Ability to track objects, provided you use the filter
+- **objectTracker**: Ability to track objects, provided you use the filter
   settings to filter out the specific object's colour out.
 
-- stereoVision: Using two webcams, it currently is only able to display two
+- **stereoVision**: Using two webcams, it currently is only able to display two
   webcam feeds both at the same time.
 
 
