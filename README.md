@@ -27,7 +27,8 @@ important**!
 where `<path to al>` is the path to `al`.
 
 
-## LICENCE MIT LICENCE Copyright (C) <2012> Chris Choi
+## LICENCE 
+MIT LICENCE Copyright (C) <2012> Chris Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
