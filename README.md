@@ -1,4 +1,6 @@
-# eyes **eyes** is an OpenCV project
+# eyes
+
+**eyes** is an OpenCV project
 
 It currently features the following programs:
 
