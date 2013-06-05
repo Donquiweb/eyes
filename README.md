@@ -10,6 +10,9 @@ It currently features the following programs:
 - **stereoVision**: Using two webcams, it currently is only able to display two
   webcam feeds both at the same time.
 
+- **cameraCalibration**: Calibrate camera to obtain intrinsic and distortion
+  settings. The results are saved into "calibration.xml" and "distortion.xml"
+  respecitively.
 
 ## Requirements
 
@@ -27,7 +30,7 @@ important**!
 where `<path to al>` is the path to `al`.
 
 
-## LICENCE 
+## LICENCE
 MIT LICENCE Copyright (C) <2012> Chris Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
