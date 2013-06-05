@@ -12,3 +12,6 @@ target_link_libraries(objectTracking ${OpenCV_LIBS})
 
 add_executable(stereoVision stereoVision.cpp)
 target_link_libraries(stereoVision ${OpenCV_LIBS})
+
+add_executable(cameraCalibration cameraCalibration.cpp)
+target_link_libraries(cameraCalibration ${OpenCV_LIBS})
