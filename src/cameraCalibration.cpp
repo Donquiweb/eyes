@@ -167,6 +167,7 @@ int listenForUserEvent()
             break;
         case 27:  // ESC key pressed
             log_info("User pressed the 'ESC' key!");
+            log_info("Exiting Calibration ...");
             return 1;
             break;
 	    }
@@ -201,7 +202,7 @@ int obtainChessboardImages(
         // handle user events
         event = listenForUserEvent();
         if (event == 1) {  // quit?
-            return 0;
+            return 1;
         }
 
         // display live feed
@@ -296,6 +297,43 @@ void undistortImage(
     );
 }
 
+int displayCalibrationEffects(
+        CvCapture *capture,
+        IplImage *image,
+        struct undistort_image *undistort)
+{
+    int event = 0;
+
+    cvNamedWindow(UNCALIBRATED_IMAGE, CV_WINDOW_AUTOSIZE);
+    cvNamedWindow(CALIBRATED_IMAGE, CV_WINDOW_AUTOSIZE);
+
+    // display calibrated and uncalibrated image
+    while(image) {
+        // image before calibration
+        IplImage *t = cvCloneImage(image);
+        cvShowImage(UNCALIBRATED_IMAGE, image);
+
+        // image after calibration
+        cvRemap(t, image, undistort->map_x, undistort->map_y);
+        cvReleaseImage(&t);
+        cvShowImage(CALIBRATED_IMAGE, image);
+
+        // handle user events
+        event = listenForUserEvent();
+        if (event == 1) {  // quit?
+            return 1;
+        }
+
+        // get next frame image
+        image = cvQueryFrame(capture);
+    }
+
+	cvDestroyWindow(UNCALIBRATED_IMAGE);
+	cvDestroyWindow(CALIBRATED_IMAGE);
+
+    return 0;
+}
+
 int main(int argc, char* argv[])
 {
     // general vars
@@ -335,12 +373,13 @@ int main(int argc, char* argv[])
 
     // obtain chessboard images
     log_info("Obtain chessboard images ...");
-    obtainChessboardImages(
+    event = obtainChessboardImages(
         capture,
         image,
         gray_image,
         chessboard
     );
+    if (event == 1) return 0;
 
 	// analyze images for calibration and save results
     log_info("Analyze chessboard images for calibration settings ...");
@@ -348,25 +387,13 @@ int main(int argc, char* argv[])
     saveCalibrationResults(results);
 
     // load calibration settings
+    log_info("Load calibration settings ...");
     undistortImage(&undistort, results, image);
-    cvNamedWindow("Undistort Image");
 
-    while(image) {
-        IplImage *t = cvCloneImage(image);
-        cvShowImage("Un-calibrated Image", image);
-        cvRemap(t, image, undistort->map_x, undistort->map_y);
-        cvReleaseImage(&t);
-        cvShowImage("Calibrated Image", image);
-
-        // handle user events
-        event = listenForUserEvent();
-        if (event == 1) {  // quit?
-            return 0;
-        }
-
-        // get next frame image
-        image = cvQueryFrame(capture);
-    }
+    // display calibration effects
+    log_info("Display calibration effects...");
+    event = displayCalibrationEffects(capture, image, undistort);
+    if (event == 1) return 0;
 
 	return 0;
 }
