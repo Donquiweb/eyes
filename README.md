@@ -16,7 +16,8 @@ It currently features the following programs:
 
 ## Requirements
 
-- `cmake` (version 2.6 and higher)
+- `cmake`: version 2.6 and higher
+- [`dbg`](https://github.com/chutsu/dbg): debug utilities
 
 
 ## Build and Install
