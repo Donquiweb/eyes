@@ -16,18 +16,19 @@ It currently features the following programs:
 
 ## Requirements
 
-- `cmake` (version 2.6 and higher)
+- `cmake`: version 2.6 and higher
+- [`dbg`](https://github.com/chutsu/dbg): debug utilities
 
 
 ## Build and Install
 #### Generate make files using `cmake`
-First navigate into
-`al` root, and generate make files using `cmake` **Note: the dot '.' is
+First navigate into the root of `eyes` repository, and generate make files using `cmake` **Note: the dot '.' is
 important**!
 
-    cd <path to al> cmake .
+    cd <path to eyes> 
+    cmake .
 
-where `<path to al>` is the path to `al`.
+where `<path to eyes>` is the path to `eyes`.
 
 
 ## LICENCE
