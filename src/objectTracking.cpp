@@ -28,7 +28,7 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
-void on_trackbar( int, void* ) {
+void on_trackbar(int, void*) {
     // gets called whenever a trackbar position is changed
 }
 
