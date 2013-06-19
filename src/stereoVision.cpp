@@ -11,24 +11,11 @@
 #define CAM_1 "Camera 1"
 #define CAM_2 "Camera 2"
 #define DISPARITY_MAP "Disparity Map"
-#define DISPARITY_CONFIGURATOR "Disparity Configurator"
+#define DISPARITY_CONFIG "Disparity Configurator"
 
-using namespace cv;
-using namespace std;
-
-
-struct calibration
+struct DisparityEventData
 {
-    CvMat *intrinsic_matrix;
-    CvMat *distortion_coeffs;
-};
-
-struct undistort_image
-{
-    IplImage *map_x;
-    IplImage *map_y;
-    IplImage *original_image;
-    IplImage *clone_image;
+    int *type;
 };
 
 int detectNumberOfCameras()
@@ -48,60 +35,183 @@ int detectNumberOfCameras()
     }
 
     // check result
-    cout << "Number of cameras: " << num << endl;
+    std::cout << "Number of cameras: " << num << std::endl;
     if (num != 2) {
-        cout << "Failed to detect 2 cameras for stereo vision!" << endl;
+        std::cout << "Failed to detect 2 cameras for stereo vision!" << std::endl;
         exit(-1);
     }
 
     return num;
 }
 
-void on_trackbar(int, void*) {
-    // gets called whenever a trackbar position is changed
+void sadWindowSizeEvent(int pos, void *sad_winsize) {
+    if (pos > 5 && pos < 255 && pos % 2 != 0)
+        *(int *)sad_winsize = pos;
 }
 
-// void createDisparityConfigurator()
-// {
-// 	//create window for trackbars
-//     cv::namedWindow(DISPARITY_CONFIGURATOR, CV_WINDOW_AUTOSIZE);
-//
-// 	//create memory to store trackbar name on window
-// 	char TrackbarName[50];
-//     sprintf(TrackbarName, "SAD Window Size", 23);
-//     sprintf(TrackbarName, "Number of Disparities", 96);
-//     sprintf(TrackbarName, "Pre Filter Size", 25);
-//     sprintf(TrackbarName, "Pre Filter Cap", 63);
-//     sprintf(TrackbarName, "Min Disparity", 0);
-//     sprintf(TrackbarName, "Texture Threshold", 20);
-//     sprintf(TrackbarName, "Uniqueness Ratio", 10);
-//     sprintf(TrackbarName, "Speckle WindowSize", 25);
-//     sprintf(TrackbarName, "Speckle Range", 8);
-//     sprintf(TrackbarName, "Disp 12 MaxDiff", 1);
-//
-// 	// create trackbars and insert them into window
-// 	// 3 parameters are:
-// 	// - address of variable that is changing when trackbar is moved
-// 	// - max value of trackbar can move
-// 	// - function that is called whenever the trackbar is moved
-// 	createTrackbar("SAD Window Size", DISPARITY_CONFIGURATOR, &H_MIN, H_MAX, on_trackbar);
-// 	createTrackbar("Number of Disparities", DISPARITY_CONFIGURATOR, &S_MIN, S_MAX, on_trackbar);
-// 	createTrackbar("Pre Filter Size", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Pre Filter Cap", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Min Disparity", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Texture Threshold", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Uniqueness Ratio", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Speckle Window Size", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Speckle Range", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-// 	createTrackbar("Disp 12 MaxDiff", DISPARITY_CONFIGURATOR, &V_MIN, V_MAX, on_trackbar);
-//
-// }
+void numberOfDisparityEvent(int pos, void *num_of_dispar) {
+    if (pos > 0 && pos % 16 == 0)
+        *(int *)num_of_dispar = pos;
+}
 
-string getImgType(int imgTypeInt)
+void textureThresholdEvent(int pos, void *texture_threshold) {
+    if (pos > 0 && pos < 100)
+        *(int *)texture_threshold = pos;
+}
+
+void preFilterCap(int pos, void *pre_filter_cap) {
+    if (pos > 0 && pos < 63)
+        *(int *)pre_filter_cap = pos;
+}
+
+void initDisparityConfigurator(cv::StereoBM &bm)
 {
-    int img_types = 35;
-    // 7 base types, with five channel options each (none or C1, ..., C4)
+	//create window for trackbars
+    cv::namedWindow(DISPARITY_CONFIG, CV_WINDOW_AUTOSIZE);
 
+	// create trackbars and insert them into window
+    cv::createTrackbar(
+        "SAD Window Size",
+        DISPARITY_CONFIG,
+        NULL,
+        255,
+        sadWindowSizeEvent,
+        (void *) &bm.state->SADWindowSize
+    );
+    cv::createTrackbar(
+        "Number of Disparities",
+        DISPARITY_CONFIG,
+        NULL,
+        200,
+        numberOfDisparityEvent,
+        (void *) &bm.state->numberOfDisparities
+    );
+
+    cv::createTrackbar(
+        "Pre-Filter Size",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        sadWindowSizeEvent,
+        (void *) &bm.state->preFilterSize
+    );
+
+    cv::createTrackbar(
+        "Pre-Filter Cap",
+        DISPARITY_CONFIG,
+        NULL,
+        63,
+        textureThresholdEvent,
+        (void *) &bm.state->preFilterCap
+    );
+
+    cv::createTrackbar(
+        "Min Disparity",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        textureThresholdEvent,
+        (void *) &bm.state->minDisparity
+    );
+
+    cv::createTrackbar(
+        "Texture Threshold",
+        DISPARITY_CONFIG,
+        NULL,
+        200,
+        textureThresholdEvent,
+        (void *) &bm.state->textureThreshold
+    );
+
+    cv::createTrackbar(
+        "Uniqueness Ratio",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        textureThresholdEvent,
+        (void *) &bm.state->uniquenessRatio
+    );
+
+    cv::createTrackbar(
+        "Speckle Window Size",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        textureThresholdEvent,
+        (void *) &bm.state->speckleWindowSize
+    );
+
+    cv::createTrackbar(
+        "Speckle Range",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        textureThresholdEvent,
+        (void *) &bm.state->speckleRange
+    );
+
+    cv::createTrackbar(
+        "Disparity Max Diff",
+        DISPARITY_CONFIG,
+        NULL,
+        100,
+        textureThresholdEvent,
+        (void *) &bm.state->disp12MaxDiff
+    );
+
+    // set trackbar positions
+    cv::setTrackbarPos(
+        "SAD Window Size",
+        DISPARITY_CONFIG,
+        bm.state->SADWindowSize
+    );
+    cv::setTrackbarPos(
+            "Number of Disparities", DISPARITY_CONFIG, bm.state->numberOfDisparities);
+    cv::setTrackbarPos(
+        "Pre-Filter Size",
+        DISPARITY_CONFIG,
+        bm.state->preFilterSize
+    );
+    cv::setTrackbarPos(
+        "Pre-Filter Cap",
+        DISPARITY_CONFIG,
+        bm.state->preFilterCap
+    );
+    cv::setTrackbarPos(
+        "Min Disparity",
+        DISPARITY_CONFIG,
+        bm.state->minDisparity
+    );
+    cv::setTrackbarPos(
+        "Texture Threshold",
+        DISPARITY_CONFIG,
+        bm.state->textureThreshold
+    );
+    cv::setTrackbarPos(
+        "Uniqueness Ratio",
+        DISPARITY_CONFIG,
+        bm.state->uniquenessRatio
+    );
+    cv::setTrackbarPos(
+        "Speckle Window Size",
+        DISPARITY_CONFIG,
+        bm.state->speckleWindowSize
+    );
+    cv::setTrackbarPos(
+        "Speckle Range",
+        DISPARITY_CONFIG,
+        bm.state->speckleRange
+    );
+    cv::setTrackbarPos(
+        "Disparity Max Diff",
+        DISPARITY_CONFIG,
+        bm.state->disp12MaxDiff
+    );
+}
+
+cv::string getImgType(int imgTypeInt)
+{
+    int img_types = 35; // 7 base types, with 5 channel options each
     int enum_ints[] = {
         CV_8U,  CV_8UC1,  CV_8UC2,  CV_8UC3,  CV_8UC4,
         CV_8S,  CV_8SC1,  CV_8SC2,  CV_8SC3,  CV_8SC4,
@@ -112,7 +222,7 @@ string getImgType(int imgTypeInt)
         CV_64F, CV_64FC1, CV_64FC2, CV_64FC3, CV_64FC4
     };
 
-    string enum_strings[] = {
+    cv::string enum_strings[] = {
         "CV_8U",  "CV_8UC1",  "CV_8UC2",  "CV_8UC3",  "CV_8UC4",
         "CV_8S",  "CV_8SC1",  "CV_8SC2",  "CV_8SC3",  "CV_8SC4",
         "CV_16U", "CV_16UC1", "CV_16UC2", "CV_16UC3", "CV_16UC4",
@@ -131,9 +241,9 @@ string getImgType(int imgTypeInt)
 }
 
 cv::StereoBM initDisparityCalculator() {
-    cv::StereoBM bm;
+    cv::StereoBM bm(CV_STEREO_BM_BASIC);
 
-    bm.state->SADWindowSize = 23;
+    bm.state->SADWindowSize = 5;
     bm.state->numberOfDisparities = 96;
     bm.state->preFilterSize = 25;
     bm.state->preFilterCap = 63;
@@ -141,24 +251,21 @@ cv::StereoBM initDisparityCalculator() {
     bm.state->textureThreshold = 20;
     bm.state->uniquenessRatio = 10;
     bm.state->speckleWindowSize = 25;
-    bm.state->speckleRange = 8;
+    bm.state->speckleRange = 32;
     bm.state->disp12MaxDiff = 1;
 
     return bm;
 }
 
-Mat calculateDisparity(
+cv::Mat calculateDisparity(
     cv::StereoBM bm,
-    Mat left,
-    Mat right)
+    cv::Mat left,
+    cv::Mat right)
 {
-    Size size = left.size();
-    Mat disparity_map = Mat(size, CV_16SC1);
-    Mat left_converted;
-    Mat right_converted;
-
-    // cout << "Left image type: " << getImgType(left.type()) << endl;
-    // cout << "Left converted image type: " << getImgType(left_converted.type()) << endl;
+    cv::Size size = left.size();
+    cv::Mat disparity_map = cv::Mat(size, CV_16SC1);
+    cv::Mat left_converted;
+    cv::Mat right_converted;
 
     // calculate disparity map
     bm(left, right, disparity_map);
@@ -169,31 +276,27 @@ Mat calculateDisparity(
 int main(int argc, char* argv[])
 {
     int num_cams = detectNumberOfCameras();
-    VideoCapture camera_1(0);
-    VideoCapture camera_2(1);
-    Mat feed_1;
-    Mat feed_2;
-    Mat gray_feed_1;
-    Mat gray_feed_2;
-    Size size = feed_1.size();
-    Mat disparity_map = Mat(size, CV_16SC1);
+    cv::VideoCapture camera_1(0);
+    cv::VideoCapture camera_2(1);
+    cv::Mat feed_1;
+    cv::Mat feed_2;
+    cv::Mat gray_feed_1;
+    cv::Mat gray_feed_2;
+    cv::Size size = feed_1.size();
+    cv::Mat disparity_map = cv::Mat(size, CV_16SC1);
     cv::StereoBM bm = initDisparityCalculator();
 
     // check camera feeds
     if (!camera_1.isOpened() && !camera_2.isOpened()) {
-        cout << "Failed to open video feeds!" << endl;
+        std::cout << "Failed to open video feeds!" << std::endl;
         return -1;
     }
-
-    // std::string intrinsic_filename = "intrinsic.xml";
-    // std:string disparity_filename = "disparity.xml";
-	// FileStorage intrinsic_file(intrinsic_filename, CV_STORAGE_READ);
-	// FileStorage disparity_file(disparity_filename, CV_STORAGE_READ);
 
     // create gui windows
     cv::namedWindow(CAM_1, CV_WINDOW_AUTOSIZE);
     cv::namedWindow(CAM_2, CV_WINDOW_AUTOSIZE);
     cv::namedWindow(DISPARITY_MAP, CV_WINDOW_AUTOSIZE);
+    initDisparityConfigurator(bm);
 
     while(1) {
         // read video streams
@@ -211,7 +314,7 @@ int main(int argc, char* argv[])
         cv::imshow(DISPARITY_MAP, disparity_map);
 
 		// delay 30ms so that screen can refresh.
-		waitKey(30);  // IMPORTANT!! IMAGE WILL NOT DISPLAY WITHOUT IT!
+        cv::waitKey(30);  // IMPORTANT!! IMAGE WILL NOT DISPLAY WITHOUT IT!
     }
 
     return 0;
